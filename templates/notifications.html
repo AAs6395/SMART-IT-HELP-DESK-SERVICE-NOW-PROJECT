@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+{% block page_subtitle %}Updates about your tickets and assignments{% endblock %}
+
+{% block content %}
+<div class="card-panel">
+  <div class="panel-head">
+    <h5>All Notifications {% if unread_count %}<span class="badge badge-open ms-1">{{ unread_count }} unread</span>{% endif %}</h5>
+    {% if unread_count %}
+    <form method="post" action="{{ url_for('notifications.mark_all_read') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-sm btn-outline-primary"><i class="bi bi-check2-all"></i> Mark all as read</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <ul class="notif-list">
+    {% for n in notifications %}
+    <li class="{% if not n.is_read %}unread{% endif %}">
+      <div class="notif-icon"><i class="bi bi-bell{% if not n.is_read %}-fill{% endif %}"></i></div>
+      <div class="notif-content">
+        <p class="mb-1">{{ n.message }}</p>
+        <small class="text-muted">{{ n.created_at.strftime('%d %b %Y, %H:%M') }}</small>
+      </div>
+      <div class="notif-actions">
+        {% if n.link %}
+        <form method="post" action="{{ url_for('notifications.mark_read', notification_id=n.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm btn-outline-secondary">Open ticket</button>
+        </form>
+        {% endif %}
+        {% if not n.is_read %}
+        <form method="post" action="{{ url_for('notifications.mark_read', notification_id=n.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm btn-primary">Mark as read</button>
+        </form>
+        {% endif %}
+      </div>
+    </li>
+    {% else %}
+    <li class="text-center py-5">
+      <div class="empty-icon"><i class="bi bi-bell-slash"></i></div>
+      <p class="text-muted mb-0">You have no notifications yet.</p>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

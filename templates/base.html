@@ -1,0 +1,239 @@
+{# base.html - shared layout with modern Top Navbar #}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Dashboard{% endblock %} &middot; Smart IT Help Desk</title>
+  <link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='vendor/bootstrap-icons.min.css') }}" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5.0">
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ================= Top Navigation Bar ================= -->
+  <header class="app-topbar sticky-top">
+    <div class="container-fluid px-3 px-xl-4">
+      <div class="d-flex align-items-center justify-content-between topbar-inner">
+
+        <!-- Left: Brand Logo & Title + Desktop Menu -->
+        <div class="d-flex align-items-center gap-3">
+          <a href="{{ url_for(dashboard_endpoint) }}" class="d-flex align-items-center gap-2 text-decoration-none">
+            <div class="brand-mark">
+              <i class="bi bi-shield-check"></i>
+            </div>
+            <div class="brand-text">
+              <strong>Smart HelpDesk</strong>
+              <small class="text-emerald">IT Support Center</small>
+            </div>
+          </a>
+
+          <!-- Desktop Navigation Items -->
+          <nav class="d-none d-lg-flex align-items-center gap-1 ms-3">
+            <a class="nav-item-link {% if request.endpoint == dashboard_endpoint %}active{% endif %}"
+               href="{{ url_for(dashboard_endpoint) }}">
+              <span class="nav-tile"><i class="bi bi-grid-1x2-fill"></i></span>
+              <span>Dashboard</span>
+            </a>
+
+            <a class="nav-item-link {% if request.endpoint == 'tickets.list_tickets' %}active{% endif %}"
+               href="{{ url_for('tickets.list_tickets') }}">
+              <span class="nav-tile"><i class="bi bi-ticket-detailed-fill"></i></span>
+              <span>{% if g.user.role == 'admin' %}All Tickets{% elif g.user.role == 'support' %}Assigned Tickets{% else %}My Tickets{% endif %}</span>
+            </a>
+
+            {% if g.user.role in ('user', 'admin') %}
+            <a class="nav-item-link {% if request.endpoint == 'tickets.create' %}active{% endif %}"
+               href="{{ url_for('tickets.create') }}">
+              <span class="nav-tile"><i class="bi bi-plus-circle-fill"></i></span>
+              <span>New Ticket</span>
+            </a>
+            {% endif %}
+
+            <a class="nav-item-link {% if request.blueprint == 'kb' %}active{% endif %}"
+               href="{{ url_for('kb.index') }}">
+              <span class="nav-tile"><i class="bi bi-lightbulb-fill"></i></span>
+              <span>Knowledge Base</span>
+            </a>
+
+            {% if g.user.role == 'admin' %}
+            <div class="dropdown">
+              <button class="nav-item-link dropdown-toggle border-0 bg-transparent {% if request.endpoint in ('admin.users', 'admin.categories', 'admin.reports') %}active{% endif %}"
+                      type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="nav-tile"><i class="bi bi-gear-wide-connected"></i></span>
+                <span>Administration</span>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-dark shadow-lg">
+                <li>
+                  <a class="dropdown-item {% if request.endpoint == 'admin.users' %}active{% endif %}" href="{{ url_for('admin.users') }}">
+                    <i class="bi bi-people-fill me-2 text-emerald"></i>Manage Users
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item {% if request.endpoint == 'admin.categories' %}active{% endif %}" href="{{ url_for('admin.categories') }}">
+                    <i class="bi bi-tags-fill me-2 text-emerald"></i>Categories
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item {% if request.endpoint == 'admin.reports' %}active{% endif %}" href="{{ url_for('admin.reports') }}">
+                    <i class="bi bi-bar-chart-fill me-2 text-emerald"></i>Reports &amp; Export
+                  </a>
+                </li>
+              </ul>
+            </div>
+            {% endif %}
+          </nav>
+        </div>
+
+        <!-- Right: Notifications & User Profile & Mobile Toggle -->
+        <div class="d-flex align-items-center gap-2">
+          <!-- Notifications Bell -->
+          <div class="dropdown">
+            <button class="icon-btn position-relative" data-bs-toggle="dropdown" aria-label="Notifications">
+              <i class="bi bi-bell-fill"></i>
+              {% if unread_count %}<span class="notif-dot">{{ unread_count }}</span>{% endif %}
+            </button>
+            <div class="dropdown-menu dropdown-menu-end notif-menu shadow-lg">
+              <div class="notif-head">
+                <strong>Notifications</strong>
+                <a href="{{ url_for('notifications.list_notifications') }}" class="small">View all</a>
+              </div>
+              {% for n in latest_notifications %}
+              <a class="notif-item {% if not n.is_read %}unread{% endif %}"
+                 href="{{ url_for('notifications.list_notifications') }}">
+                <span class="notif-text">{{ n.message }}</span>
+                <span class="notif-time">{{ n.created_at.strftime('%d %b, %H:%M') }}</span>
+              </a>
+              {% else %}
+              <div class="notif-empty">You have no notifications.</div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- User Profile Dropdown -->
+          <div class="dropdown">
+            <button class="profile-btn" data-bs-toggle="dropdown" aria-expanded="false">
+              <span class="avatar avatar-sm">{{ g.user.name[0]|upper }}</span>
+              <div class="d-none d-md-flex flex-column text-start lh-1">
+                <span class="fw-semibold text-white small text-truncate" style="max-width: 130px;">{{ g.user.name }}</span>
+                <span class="text-white-50" style="font-size: 0.72rem;">{{ g.user.role_label }}</span>
+              </div>
+              <i class="bi bi-chevron-down text-white-50 small ms-1"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-lg">
+              <li><span class="dropdown-item-text small text-muted">{{ g.user.email }}</span></li>
+              <li><span class="dropdown-item-text small badge bg-light text-dark border ms-3">{{ g.user.role_label }}</span></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ url_for('user.profile') }}"><i class="bi bi-person-fill-gear me-2"></i> My Profile</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('notifications.list_notifications') }}"><i class="bi bi-bell-fill me-2"></i> Notifications {% if unread_count %}<span class="badge bg-danger rounded-pill ms-1">{{ unread_count }}</span>{% endif %}</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+            </ul>
+          </div>
+
+          <!-- Mobile Toggle Button -->
+          <button class="icon-btn d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#mobileNavMenu" aria-label="Toggle navigation">
+            <i class="bi bi-list fs-5"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Mobile Navigation Collapse Menu -->
+      <div class="collapse d-lg-none py-3 border-top border-secondary-subtle" id="mobileNavMenu">
+        <div class="d-flex flex-column gap-2">
+          <a class="nav-item-link {% if request.endpoint == dashboard_endpoint %}active{% endif %}"
+             href="{{ url_for(dashboard_endpoint) }}">
+            <span class="nav-tile"><i class="bi bi-grid-1x2-fill"></i></span>
+            <span>Dashboard</span>
+          </a>
+          <a class="nav-item-link {% if request.endpoint == 'tickets.list_tickets' %}active{% endif %}"
+             href="{{ url_for('tickets.list_tickets') }}">
+            <span class="nav-tile"><i class="bi bi-ticket-detailed-fill"></i></span>
+            <span>{% if g.user.role == 'admin' %}All Tickets{% elif g.user.role == 'support' %}Assigned Tickets{% else %}My Tickets{% endif %}</span>
+          </a>
+          {% if g.user.role in ('user', 'admin') %}
+          <a class="nav-item-link {% if request.endpoint == 'tickets.create' %}active{% endif %}"
+             href="{{ url_for('tickets.create') }}">
+            <span class="nav-tile"><i class="bi bi-plus-circle-fill"></i></span>
+            <span>New Ticket</span>
+          </a>
+          {% endif %}
+          <a class="nav-item-link {% if request.blueprint == 'kb' %}active{% endif %}"
+             href="{{ url_for('kb.index') }}">
+            <span class="nav-tile"><i class="bi bi-lightbulb-fill"></i></span>
+            <span>Knowledge Base</span>
+          </a>
+          {% if g.user.role == 'admin' %}
+          <div class="pt-2 border-top border-secondary-subtle">
+            <span class="small text-white-50 text-uppercase fw-bold ms-2">Administration</span>
+          </div>
+          <a class="nav-item-link {% if request.endpoint == 'admin.users' %}active{% endif %}"
+             href="{{ url_for('admin.users') }}">
+            <span class="nav-tile"><i class="bi bi-people-fill"></i></span>
+            <span>Manage Users</span>
+          </a>
+          <a class="nav-item-link {% if request.endpoint == 'admin.categories' %}active{% endif %}"
+             href="{{ url_for('admin.categories') }}">
+            <span class="nav-tile"><i class="bi bi-tags-fill"></i></span>
+            <span>Categories</span>
+          </a>
+          <a class="nav-item-link {% if request.endpoint == 'admin.reports' %}active{% endif %}"
+             href="{{ url_for('admin.reports') }}">
+            <span class="nav-tile"><i class="bi bi-bar-chart-fill"></i></span>
+            <span>Reports &amp; Export</span>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ================= Page Header Banner ================= -->
+  <section class="page-header-bar">
+    <div class="container-fluid px-3 px-xl-4">
+      <div class="d-flex justify-content-between align-items-center py-3">
+        <div>
+          <h1 class="page-main-title">{% block page_title %}Dashboard{% endblock %}</h1>
+          <p class="page-main-subtitle">{% block page_subtitle %}{% endblock %}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Main Content Container ================= -->
+  <main class="content-container container-fluid px-3 px-xl-4 py-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-stack mb-3">
+          {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ================= Footer ================= -->
+  <footer class="app-footer">
+    <div class="container-fluid px-3 px-xl-4 text-center text-md-start d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div>Smart IT Help Desk Management System &copy; {{ 2026 }} &middot; IT Support Center</div>
+      <div class="small text-muted"><span class="badge bg-light text-success border me-1"><i class="bi bi-check-circle-fill me-1"></i>System Online</span> All services running</div>
+    </div>
+  </footer>
+
+</div>
+
+<script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

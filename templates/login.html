@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login &middot; Smart IT Help Desk</title>
+  <link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='vendor/bootstrap-icons.min.css') }}" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5.0">
+</head>
+<body class="auth-body">
+<div class="auth-wrap">
+
+  <!-- Left brand panel -->
+  <section class="auth-brand">
+    <div class="auth-brand-inner">
+      <div class="sidebar-brand mb-4">
+        <div class="brand-mark"><i class="bi bi-shield-check"></i></div>
+        <div class="brand-text">
+          <strong>Smart HelpDesk</strong>
+          <small class="text-emerald">IT Support Center</small>
+        </div>
+      </div>
+      <h2>Resolve IT issues faster, together.</h2>
+      <p class="text-white-50">
+        A single place for employees to report technical problems and for the IT
+        team to assign, track and resolve them.
+      </p>
+      <ul class="auth-points">
+        <li><i class="bi bi-check-circle-fill"></i> Submit and track support tickets</li>
+        <li><i class="bi bi-check-circle-fill"></i> Assign tickets to IT staff</li>
+        <li><i class="bi bi-check-circle-fill"></i> Real-time status and notifications</li>
+        <li><i class="bi bi-check-circle-fill"></i> Reports and service statistics</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Right login form -->
+  <section class="auth-form-side">
+    <div class="auth-card">
+      <h3>Sign in</h3>
+      <p class="text-muted mb-4">Use your help desk account to continue.</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} py-2">{{ message }}</div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="post" class="needs-validation" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label for="email" class="form-label">Email address</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+            <input type="email" class="form-control" id="email" name="email"
+                   value="{{ email or '' }}" placeholder="name@company.com" required autofocus>
+            <div class="invalid-feedback">Please enter a valid email address.</div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label">Password</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            <input type="password" class="form-control" id="password" name="password"
+                   placeholder="Enter your password" required minlength="6">
+            <button class="btn btn-outline-secondary" type="button" id="togglePassword" tabindex="-1">
+              <i class="bi bi-eye"></i>
+            </button>
+            <div class="invalid-feedback">Please enter your password.</div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2 mb-3">
+          <i class="bi bi-box-arrow-in-right"></i> Login
+        </button>
+      </form>
+
+      <p class="text-center text-muted small mb-3">
+        New employee? <a href="{{ url_for('auth.register') }}">Create an account</a>
+      </p>
+
+      <div class="demo-box">
+        <div class="demo-title"><i class="bi bi-info-circle"></i> Demo accounts</div>
+        <div class="demo-row"><span>Admin</span><code>admin@helpdesk.com / Admin@123</code></div>
+        <div class="demo-row"><span>Support</span><code>support@helpdesk.com / Support@123</code></div>
+        <div class="demo-row"><span>Employee</span><code>user@helpdesk.com / User@123</code></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

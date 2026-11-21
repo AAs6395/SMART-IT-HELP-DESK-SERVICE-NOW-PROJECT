@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Knowledge Base{% endblock %}
+{% block page_title %}Self-Service Knowledge Base{% endblock %}
+{% block page_subtitle %}Explore instant solutions and troubleshooting guides before raising a ticket{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <!-- Search & Category Filters -->
+  <div class="col-12">
+    <div class="card-panel">
+      <form method="get" class="row g-2 align-items-center">
+        <div class="col-md-7 col-lg-8">
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" name="q" value="{{ search }}"
+                   placeholder="Search common issues, e.g. Wi-Fi, printer jam, password reset...">
+          </div>
+        </div>
+        <div class="col-md-3 col-lg-2">
+          <select class="form-select" name="category" onchange="this.form.submit()">
+            <option value="">All Categories</option>
+            {% for c in categories %}
+            <option value="{{ c.id }}" {% if selected_category == c.id %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 col-lg-2 d-flex gap-2">
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i> Filter</button>
+          {% if search or selected_category %}
+          <a href="{{ url_for('kb.index') }}" class="btn btn-outline-secondary" title="Reset filters"><i class="bi bi-x-lg"></i></a>
+          {% endif %}
+        </div>
+      </form>
+
+      <!-- Category quick pills -->
+      <div class="d-flex gap-2 flex-wrap mt-3 pt-2 border-top">
+        <span class="small text-muted align-self-center me-1">Topics:</span>
+        <a href="{{ url_for('kb.index') }}" class="badge {% if not selected_category %}bg-primary{% else %}bg-light text-dark border{% endif %} text-decoration-none py-2 px-3">
+          All ({{ articles|length }})
+        </a>
+        {% for c in categories %}
+        <a href="{{ url_for('kb.index', category=c.id) }}"
+           class="badge {% if selected_category == c.id %}bg-primary{% else %}bg-light text-dark border{% endif %} text-decoration-none py-2 px-3">
+          {{ c.name }}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Bar -->
+  <div class="col-12 d-flex justify-content-between align-items-center">
+    <div class="text-muted small">Showing <strong>{{ articles|length }}</strong> guide(s)</div>
+    {% if g.user.role in ('admin', 'support') %}
+    <a href="{{ url_for('kb.create_article') }}" class="btn btn-sm btn-primary">
+      <i class="bi bi-plus-lg"></i> New Solution Guide
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- Article Grid -->
+  {% for a in articles %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card-panel h-100 d-flex flex-direction-column justify-content-between kb-card">
+      <div>
+        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+          <span class="badge bg-light text-primary border">{{ a.category.name if a.category else 'General' }}</span>
+          <span class="small text-muted" title="{{ a.helpful_count }} people found this helpful">
+            <i class="bi bi-hand-thumbs-up-fill text-success"></i> {{ a.helpful_count }}
+          </span>
+        </div>
+        <h5 class="kb-card-title mb-2">
+          <a href="{{ url_for('kb.detail', article_id=a.id) }}" class="text-dark text-decoration-none">
+            {{ a.title }}
+          </a>
+        </h5>
+        <p class="text-muted small mb-3">
+          {{ a.solution[:130] }}...
+        </p>
+      </div>
+      <div class="pt-2 border-top d-flex justify-content-between align-items-center mt-auto">
+        <span class="small text-muted"><i class="bi bi-eye"></i> {{ a.views }} views</span>
+        <a href="{{ url_for('kb.detail', article_id=a.id) }}" class="btn btn-sm btn-outline-primary">
+          Read Solution &rarr;
+        </a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12">
+    <div class="card-panel text-center py-5">
+      <div class="empty-icon"><i class="bi bi-journal-x"></i></div>
+      <h5 class="text-muted">No solutions found</h5>
+      <p class="small text-muted mb-3">Try adjusting your search terms or browse all categories.</p>
+      <a href="{{ url_for('kb.index') }}" class="btn btn-sm btn-outline-primary">Reset Filters</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+

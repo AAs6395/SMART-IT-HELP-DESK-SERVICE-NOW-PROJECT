@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}Reports &amp; Statistics{% endblock %}
+{% block page_subtitle %}Analyse ticket volumes, priorities and staff performance{% endblock %}
+
+{% block content %}
+<div class="card-panel mb-3">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-sm-4 col-lg-3">
+      <label class="form-label small">From date</label>
+      <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+    </div>
+    <div class="col-sm-4 col-lg-3">
+      <label class="form-label small">To date</label>
+      <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+    </div>
+    <div class="col-sm-4 col-lg-6 d-flex gap-2">
+      <button class="btn btn-primary"><i class="bi bi-funnel"></i> Apply</button>
+      <a href="{{ url_for('admin.reports') }}" class="btn btn-outline-secondary">Clear</a>
+      <a href="{{ url_for('admin.export_report', date_from=date_from, date_to=date_to) }}"
+         class="btn btn-success ms-auto"><i class="bi bi-download"></i> Export CSV</a>
+    </div>
+  </form>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-icon icon-navy"><i class="bi bi-ticket-detailed"></i></div>
+    <div><span class="stat-label">Tickets in range</span><span class="stat-value">{{ total }}</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-green"><i class="bi bi-check2-circle"></i></div>
+    <div><span class="stat-label">Resolved / Closed</span><span class="stat-value">{{ resolved }}</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-amber"><i class="bi bi-hourglass-split"></i></div>
+    <div><span class="stat-label">Pending</span><span class="stat-value">{{ pending }}</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-blue"><i class="bi bi-percent"></i></div>
+    <div>
+      <span class="stat-label">Resolution rate</span>
+      <span class="stat-value">{{ ((resolved / total * 100) if total else 0)|round(0)|int }}%</span>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-1">
+  <div class="col-lg-4">
+    <div class="card-panel h-100">
+      <div class="panel-head"><h5>Tickets by Category</h5></div>
+      <table class="table table-sm mb-0">
+        <tbody>
+          {% for name, count in category_counts %}
+          <tr><td>{{ name }}</td><td class="text-end fw-semibold">{{ count }}</td></tr>
+          {% else %}
+          <tr><td class="text-muted">No tickets in this range.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card-panel h-100">
+      <div class="panel-head"><h5>Tickets by Priority</h5></div>
+      <table class="table table-sm mb-0">
+        <tbody>
+          {% for name, count in priority_counts.items() %}
+          <tr>
+            <td><span class="prio {{ {'Low':'prio-low','Medium':'prio-medium','High':'prio-high','Critical':'prio-critical'}[name] }}">{{ name }}</span></td>
+            <td class="text-end fw-semibold">{{ count }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <hr>
+      <div class="panel-head"><h5>Tickets by Status</h5></div>
+      <table class="table table-sm mb-0">
+        <tbody>
+          {% for name, count in status_counts.items() %}
+          <tr><td>{{ name }}</td><td class="text-end fw-semibold">{{ count }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card-panel h-100">
+      <div class="panel-head"><h5>Tickets per Support Staff</h5></div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Staff</th><th class="text-end">Assigned</th><th class="text-end">Resolved</th><th class="text-end">Pending</th></tr></thead>
+        <tbody>
+          {% for row in staff_rows %}
+          <tr>
+            <td>{{ row.name }}</td>
+            <td class="text-end">{{ row.assigned }}</td>
+            <td class="text-end">{{ row.resolved }}</td>
+            <td class="text-end">{{ row.pending }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-muted">No support staff accounts.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-1">
+  <div class="col-lg-5">
+    <div class="card-panel h-100">
+      <div class="panel-head"><h5>Monthly Statistics (12 months)</h5></div>
+      <table class="table table-sm mb-0">
+        <tbody>
+          {% for label, count in monthly_counts %}
+          <tr><td>{{ label }}</td><td class="text-end fw-semibold">{{ count }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card-panel h-100">
+      <div class="panel-head">
+        <h5>Ticket Register</h5>
+        <span class="small text-muted">Latest 10 tickets in range</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead><tr><th>Ticket</th><th>Title</th><th>Priority</th><th>Status</th><th>Assigned</th></tr></thead>
+          <tbody>
+            {% for t in tickets[:10] %}
+            <tr>
+              <td><a href="{{ url_for('tickets.detail', ticket_id=t.id) }}" class="ticket-id">{{ t.ticket_number }}</a></td>
+              <td>{{ t.title|truncate(28) }}</td>
+              <td><span class="prio {{ t.priority_class }}">{{ t.priority }}</span></td>
+              <td><span class="badge {{ t.status_class }}">{{ t.status }}</span></td>
+              <td>{{ t.assignee.name if t.assignee else '—' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-muted py-4">No tickets in the selected range.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

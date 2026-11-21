@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block page_subtitle %}View accounts, add IT support staff and manage access{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card-panel">
+      <div class="panel-head">
+        <h5>All Accounts ({{ users|length }})</h5>
+        <form method="get" class="d-flex gap-2">
+          <input type="text" class="form-control form-control-sm" name="q" value="{{ search }}" placeholder="Search name or email">
+          <select class="form-select form-select-sm" name="role">
+            <option value="">All roles</option>
+            <option value="user" {% if role == 'user' %}selected{% endif %}>Employee</option>
+            <option value="support" {% if role == 'support' %}selected{% endif %}>Support</option>
+            <option value="admin" {% if role == 'admin' %}selected{% endif %}>Admin</option>
+          </select>
+          <button class="btn btn-sm btn-primary">Filter</button>
+        </form>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Joined</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+            <tr>
+              <td class="fw-semibold">{{ u.name }}</td>
+              <td>{{ u.email }}</td>
+              <td><span class="role-pill">{{ u.role_label }}</span></td>
+              <td>{{ u.department or '—' }}</td>
+              <td class="small text-muted">{{ u.created_at.strftime('%d %b %Y') }}</td>
+              <td>
+                {% if u.is_active %}
+                <span class="badge badge-resolved">Active</span>
+                {% else %}
+                <span class="badge badge-closed">Inactive</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if u.id != g.user.id %}
+                <form method="post" action="{{ url_for('admin.toggle_user', user_id=u.id) }}"
+                      data-confirm="{% if u.is_active %}Deactivate{% else %}Activate{% endif %} the account of {{ u.name }}?">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm {% if u.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+                    {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
+                  </button>
+                </form>
+                {% else %}
+                <span class="small text-muted">You</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-4">No accounts found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card-panel">
+      <div class="panel-head"><h5>Add Support Staff</h5></div>
+      <p class="small text-muted">Only administrators can create support staff accounts.</p>
+      <form method="post" action="{{ url_for('admin.add_support_staff') }}" class="needs-validation" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-2">
+          <label class="form-label small" for="name">Full name *</label>
+          <input type="text" class="form-control" id="name" name="name" required minlength="3">
+          <div class="invalid-feedback">Enter at least 3 characters.</div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small" for="email">Email *</label>
+          <input type="email" class="form-control" id="email" name="email" required>
+          <div class="invalid-feedback">Enter a valid email.</div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small" for="department">Department</label>
+          <input type="text" class="form-control" id="department" name="department" value="IT Support">
+        </div>
+        <div class="mb-2">
+          <label class="form-label small" for="password">Password *</label>
+          <input type="password" class="form-control" id="password" name="password" required minlength="6">
+          <div class="invalid-feedback">Minimum 6 characters.</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small" for="confirm_password">Confirm password *</label>
+          <input type="password" class="form-control" id="confirm_password" name="confirm_password" required minlength="6">
+          <div class="invalid-feedback">Please confirm the password.</div>
+        </div>
+        <button class="btn btn-primary w-100"><i class="bi bi-person-plus"></i> Create staff account</button>
+      </form>
+    </div>
+
+    <div class="card-panel mt-3">
+      <div class="panel-head"><h5>Current Support Team</h5></div>
+      <ul class="mini-list">
+        {% for s in support_staff %}
+        <li>
+          <span class="avatar avatar-sm">{{ s.name[0]|upper }}</span>
+          <div><div class="fw-semibold">{{ s.name }}</div><small class="text-muted">{{ s.email }}</small></div>
+        </li>
+        {% else %}
+        <li class="text-muted small">No support staff accounts yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

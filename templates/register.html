@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Register &middot; Smart IT Help Desk</title>
+  <link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='vendor/bootstrap-icons.min.css') }}" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5.0">
+</head>
+<body class="auth-body">
+<div class="auth-wrap">
+
+  <section class="auth-brand">
+    <div class="auth-brand-inner">
+      <div class="sidebar-brand mb-4">
+        <div class="brand-mark"><i class="bi bi-shield-check"></i></div>
+        <div class="brand-text">
+          <strong>Smart HelpDesk</strong>
+          <small class="text-emerald">IT Support Center</small>
+        </div>
+      </div>
+      <h2>Create your employee account.</h2>
+      <p class="text-white-50">
+        Register once and you can report any hardware, software, network or
+        account problem directly to the IT support team.
+      </p>
+      <ul class="auth-points">
+        <li><i class="bi bi-check-circle-fill"></i> Free for all employees</li>
+        <li><i class="bi bi-check-circle-fill"></i> Track every ticket in one place</li>
+        <li><i class="bi bi-check-circle-fill"></i> Get notified when your issue is resolved</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="auth-form-side">
+    <div class="auth-card">
+      <h3>Register</h3>
+      <p class="text-muted mb-4">All fields marked * are required.</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} py-2">{{ message }}</div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="post" class="needs-validation" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label class="form-label" for="name">Full name *</label>
+          <input type="text" class="form-control" id="name" name="name"
+                 value="{{ form.name or '' }}" required minlength="3" placeholder="e.g. Aisha Khan">
+          <div class="invalid-feedback">Please enter your full name.</div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="email">Email address *</label>
+          <input type="email" class="form-control" id="email" name="email"
+                 value="{{ form.email or '' }}" required placeholder="name@company.com">
+          <div class="invalid-feedback">Please enter a valid email address.</div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label" for="department">Department</label>
+            <input type="text" class="form-control" id="department" name="department"
+                   value="{{ form.department or '' }}" placeholder="e.g. Accounts">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label" for="phone">Phone</label>
+            <input type="text" class="form-control" id="phone" name="phone"
+                   value="{{ form.phone or '' }}" placeholder="Optional">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label" for="password">Password *</label>
+            <input type="password" class="form-control" id="password" name="password"
+                   required minlength="6" placeholder="Min. 6 characters">
+            <div class="invalid-feedback">Password must be at least 6 characters.</div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label" for="confirm_password">Confirm password *</label>
+            <input type="password" class="form-control" id="confirm_password"
+                   name="confirm_password" required minlength="6">
+            <div class="invalid-feedback">Please confirm your password.</div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2 mb-3">
+          <i class="bi bi-person-plus"></i> Create account
+        </button>
+      </form>
+
+      <p class="text-center text-muted small mb-0">
+        Already registered? <a href="{{ url_for('auth.login') }}">Back to login</a>
+      </p>
+    </div>
+  </section>
+</div>
+
+<script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

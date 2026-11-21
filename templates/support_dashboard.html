@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Support Dashboard{% endblock %}
+{% block page_title %}Support Staff Dashboard{% endblock %}
+{% block page_subtitle %}Your assigned workload and latest ticket activity{% endblock %}
+
+{% block content %}
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-icon icon-navy"><i class="bi bi-layers-fill"></i></div>
+    <div><span class="stat-label">Assigned Tickets</span><span class="stat-value">{{ stats.total }}</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-blue"><i class="bi bi-clock-fill"></i></div>
+    <div><span class="stat-label">Pending</span><span class="stat-value">{{ stats.pending }}</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-amber"><i class="bi bi-hourglass-split"></i></div>
+    <div><span class="stat-label">In Progress</span><span class="stat-value">{{ stats.in_progress }}</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-green"><i class="bi bi-check-circle-fill"></i></div>
+    <div><span class="stat-label">Resolved</span><span class="stat-value">{{ stats.resolved }}</span></div>
+  </div>
+</div>
+
+<div class="row g-3 mt-1">
+  <div class="col-lg-8">
+    <div class="card-panel h-100">
+      <div class="panel-head">
+        <h5>My Assigned Tickets</h5>
+        <a href="{{ url_for('tickets.list_tickets') }}" class="btn btn-sm btn-outline-primary">View all</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr><th>Ticket ID</th><th>Title</th><th>Priority</th><th>Status</th><th>Created</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for t in assigned_tickets %}
+            <tr>
+              <td><span class="ticket-id">{{ t.ticket_number }}</span></td>
+              <td class="fw-semibold">{{ t.title|truncate(34) }}</td>
+              <td><span class="prio {{ t.priority_class }}">{{ t.priority }}</span></td>
+              <td><span class="badge {{ t.status_class }}">{{ t.status }}</span></td>
+              <td class="text-muted small">{{ t.created_at.strftime('%d %b %Y') }}</td>
+              <td><a href="{{ url_for('tickets.detail', ticket_id=t.id) }}" class="btn btn-sm btn-outline-secondary">Work on it</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted py-4">No tickets are assigned to you at the moment.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card-panel mb-3">
+      <div class="panel-head"><h5>Workload Overview</h5></div>
+      {% set total = stats.total or 1 %}
+      <div class="overview-row">
+        <span>Pending</span>
+        <div class="progress"><div class="progress-bar bg-primary" style="width: {{ (stats.pending / total * 100)|round(0) }}%"></div></div>
+        <strong>{{ stats.pending }}</strong>
+      </div>
+      <div class="overview-row">
+        <span>In Progress</span>
+        <div class="progress"><div class="progress-bar bg-warning" style="width: {{ (stats.in_progress / total * 100)|round(0) }}%"></div></div>
+        <strong>{{ stats.in_progress }}</strong>
+      </div>
+      <div class="overview-row">
+        <span>Resolved</span>
+        <div class="progress"><div class="progress-bar bg-success" style="width: {{ (stats.resolved / total * 100)|round(0) }}%"></div></div>
+        <strong>{{ stats.resolved }}</strong>
+      </div>
+    </div>
+
+    <div class="card-panel">
+      <div class="panel-head"><h5>Recent Updates</h5></div>
+      <ul class="timeline small">
+        {% for h in recent_updates %}
+        <li>
+          <span class="dot"></span>
+          <div>
+            <div>{{ h.activity_description }}</div>
+            <small class="text-muted">{{ h.ticket.ticket_number }} &middot; {{ h.created_at.strftime('%d %b, %H:%M') }}</small>
+          </div>
+        </li>
+        {% else %}
+        <li class="text-muted">No activity recorded yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

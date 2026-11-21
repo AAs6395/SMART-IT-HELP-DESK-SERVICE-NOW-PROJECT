@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% block title %}{{ ticket.ticket_number }}{% endblock %}
+{% block page_title %}{{ ticket.ticket_number }} &middot; {{ ticket.title }}{% endblock %}
+{% block page_subtitle %}Submitted {{ ticket.created_at.strftime('%d %B %Y at %H:%M') }} by {{ ticket.creator.name }}{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+
+  <!-- ================= Left column: description, comments, history ================= -->
+  <div class="col-lg-8">
+
+    <!-- SLA Tracker Banner -->
+    {% set sla = ticket.sla_status %}
+    <div class="card-panel mb-3 sla-tracker-box {{ 'border-danger bg-light-danger' if sla.is_breached else 'border-primary-subtle bg-light-primary' }}">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi {{ sla.icon }} fs-4 {{ 'text-danger' if sla.is_breached else 'text-primary' }}"></i>
+          <div>
+            <div class="small fw-bold text-uppercase text-muted">Service Level Agreement (SLA)</div>
+            <strong class="fs-6 {{ 'text-danger' if sla.is_breached else 'text-dark' }}">
+              {{ ticket.priority }} Priority &bull; {{ ticket.sla_hours }}h Resolution Target
+            </strong>
+          </div>
+        </div>
+        <div>
+          <span class="badge {{ sla.badge_class }} fs-6 py-2 px-3" id="slaCountdownBadge"
+                data-seconds="{{ sla.seconds_remaining }}">
+            <i class="bi {{ sla.icon }} me-1"></i><span id="slaTimerText">{{ sla.label }}</span>
+          </span>
+        </div>
+      </div>
+      <div class="small text-muted mt-2 pt-2 border-top d-flex justify-content-between flex-wrap gap-2">
+        <span><i class="bi bi-clock-history me-1"></i>Target Deadline: <strong>{{ sla.deadline_str }}</strong></span>
+        <span>{{ sla.detail }}</span>
+      </div>
+    </div>
+
+    <div class="card-panel">
+      <div class="panel-head">
+        <h5>Problem Description</h5>
+        <div class="d-flex gap-2">
+          <span class="prio {{ ticket.priority_class }}">{{ ticket.priority }} priority</span>
+          <span class="badge {{ ticket.status_class }}">{{ ticket.status }}</span>
+        </div>
+      </div>
+      <p class="ticket-desc">{{ ticket.description }}</p>
+
+      {% if ticket.attachment %}
+      <p class="mb-0 small">
+        <i class="bi bi-paperclip"></i>
+        <a href="{{ url_for('tickets.attachment', ticket_id=ticket.id) }}">Download attachment</a>
+      </p>
+      {% endif %}
+    </div>
+
+    {% if ticket.resolution_notes %}
+    <div class="card-panel mt-3 resolution-box">
+      <div class="panel-head">
+        <h5><i class="bi bi-check2-circle text-success"></i> Resolution Notes</h5>
+        {% if ticket.resolved_at %}
+        <span class="small text-muted">Resolved {{ ticket.resolved_at.strftime('%d %b %Y, %H:%M') }}</span>
+        {% endif %}
+      </div>
+      <p class="mb-0">{{ ticket.resolution_notes }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Comments -->
+    <div class="card-panel mt-3">
+      <div class="panel-head">
+        <h5>Comments ({{ ticket.comments|length }})</h5>
+      </div>
+
+      <ul class="comment-list">
+        {% for c in ticket.comments %}
+        <li>
+          <span class="avatar avatar-sm {% if c.author.role == 'support' %}bg-info{% elif c.author.role == 'admin' %}bg-dark{% endif %}">
+            {{ c.author.name[0]|upper }}
+          </span>
+          <div class="comment-body">
+            <div class="comment-head">
+              <strong>{{ c.author.name }}</strong>
+              <span class="role-pill">{{ c.author.role_label }}</span>
+              <small class="text-muted ms-auto">{{ c.created_at.strftime('%d %b %Y, %H:%M') }}</small>
+            </div>
+            <p class="mb-0">{{ c.comment_text }}</p>
+          </div>
+        </li>
+        {% else %}
+        <li class="text-muted small">No comments yet. Start the conversation below.</li>
+        {% endfor %}
+      </ul>
+
+      <form method="post" action="{{ url_for('tickets.add_comment', ticket_id=ticket.id) }}" class="mt-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="form-label" for="comment_text">Add a comment</label>
+        <textarea class="form-control mb-2" id="comment_text" name="comment_text" rows="3"
+                  placeholder="Share an update, ask a question or describe what you tried..." required></textarea>
+        <button class="btn btn-primary btn-sm"><i class="bi bi-chat-left-text"></i> Post comment</button>
+      </form>
+    </div>
+
+    <!-- Activity history -->
+    <div class="card-panel mt-3">
+      <div class="panel-head"><h5>Ticket History</h5></div>
+      <ul class="timeline">
+        {% for h in ticket.history %}
+        <li>
+          <span class="dot"></span>
+          <div>
+            <div>{{ h.activity_description }}</div>
+            <small class="text-muted">
+              {{ h.created_at.strftime('%d %b %Y, %H:%M') }}
+              {% if h.old_status and h.new_status and h.old_status != h.new_status %}
+                &middot; {{ h.old_status }} &rarr; {{ h.new_status }}
+              {% endif %}
+            </small>
+          </div>
+        </li>
+        {% else %}
+        <li class="text-muted small">No history recorded.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- ================= Right column: details and actions ================= -->
+  <div class="col-lg-4">
+
+    <div class="card-panel">
+      <div class="panel-head"><h5>Ticket Information</h5></div>
+      <dl class="detail-list">
+        <dt>Ticket ID</dt><dd><span class="ticket-id">{{ ticket.ticket_number }}</span></dd>
+        <dt>Category</dt><dd>{{ ticket.category.name }}</dd>
+        <dt>Priority</dt><dd><span class="prio {{ ticket.priority_class }}">{{ ticket.priority }}</span></dd>
+        <dt>Status</dt><dd><span class="badge {{ ticket.status_class }}">{{ ticket.status }}</span></dd>
+        <dt>Submitted by</dt><dd>{{ ticket.creator.name }}<br><small class="text-muted">{{ ticket.creator.email }}</small></dd>
+        <dt>Assigned to</dt><dd>{{ ticket.assignee.name if ticket.assignee else 'Not assigned yet' }}</dd>
+        <dt>Created</dt><dd>{{ ticket.created_at.strftime('%d %b %Y, %H:%M') }}</dd>
+        <dt>Last updated</dt><dd>{{ ticket.updated_at.strftime('%d %b %Y, %H:%M') }}</dd>
+        {% if ticket.resolved_at %}
+        <dt>Resolved</dt><dd>{{ ticket.resolved_at.strftime('%d %b %Y, %H:%M') }}</dd>
+        {% endif %}
+      </dl>
+    </div>
+
+    {% if g.user.role == 'admin' %}
+    <!-- Admin: assign -->
+    <div class="card-panel mt-3">
+      <div class="panel-head"><h5>Assign Ticket</h5></div>
+      <form method="post" action="{{ url_for('tickets.assign', ticket_id=ticket.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="form-label small" for="assigned_to">Support staff</label>
+        <select class="form-select mb-2" id="assigned_to" name="assigned_to">
+          <option value="">Unassigned</option>
+          {% for s in support_staff %}
+          <option value="{{ s.id }}" {% if ticket.assigned_to == s.id %}selected{% endif %}>{{ s.name }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn btn-primary btn-sm w-100"><i class="bi bi-person-check"></i> Save assignment</button>
+      </form>
+
+      <!-- Admin: priority -->
+      <hr>
+      <form method="post" action="{{ url_for('tickets.update_priority', ticket_id=ticket.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="form-label small" for="priority">Priority</label>
+        <div class="d-flex gap-2">
+          <select class="form-select" id="priority" name="priority">
+            {% for p in priorities %}
+            <option value="{{ p }}" {% if ticket.priority == p %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-outline-primary">Update</button>
+        </div>
+      </form>
+    </div>
+    {% endif %}
+
+    <!-- Staff / admin: status and resolution -->
+    {% if can_manage %}
+    <div class="card-panel mt-3">
+      <div class="panel-head"><h5>Update Status</h5></div>
+      <form method="post" action="{{ url_for('tickets.update_status', ticket_id=ticket.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="form-label small" for="new_status">New status</label>
+        <select class="form-select mb-2" id="new_status" name="new_status" required>
+          {% for s in allowed_statuses %}
+          <option value="{{ s }}" {% if ticket.status == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+
+        <label class="form-label small" for="resolution_notes">Resolution notes</label>
+        <textarea class="form-control mb-2" id="resolution_notes" name="resolution_notes" rows="3"
+                  placeholder="Required when marking the ticket as Resolved.">{{ ticket.resolution_notes or '' }}</textarea>
+
+        <button class="btn btn-success btn-sm w-100"><i class="bi bi-arrow-repeat"></i> Save status</button>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if g.user.role == 'admin' %}
+    <div class="card-panel mt-3">
+      <div class="panel-head"><h5 class="text-danger">Danger Zone</h5></div>
+      <form method="post" action="{{ url_for('tickets.delete', ticket_id=ticket.id) }}"
+            data-confirm="Delete ticket {{ ticket.ticket_number }} permanently? This cannot be undone.">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-outline-danger btn-sm w-100"><i class="bi bi-trash"></i> Delete this ticket</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Live countdown timer for active SLA resolution targets
+(function() {
+  const badge = document.getElementById('slaCountdownBadge');
+  const timerText = document.getElementById('slaTimerText');
+  if (!badge || !timerText) return;
+
+  let remainingSec = parseInt(badge.getAttribute('data-seconds'), 10);
+  if (isNaN(remainingSec) || remainingSec <= 0) return;
+
+  const interval = setInterval(() => {
+    remainingSec--;
+    if (remainingSec <= 0) {
+      clearInterval(interval);
+      badge.className = 'badge badge-sla-breached fs-6 py-2 px-3 pulse-badge';
+      timerText.textContent = 'SLA Breached (Just Now)';
+      return;
+    }
+
+    const hours = Math.floor(remainingSec / 3600);
+    const minutes = Math.floor((remainingSec % 3600) / 60);
+    const seconds = remainingSec % 60;
+
+    let display = '';
+    if (hours > 0) {
+      display = `${hours}h ${minutes}m ${seconds}s left`;
+    } else if (minutes > 0) {
+      display = `${minutes}m ${seconds}s left`;
+    } else {
+      display = `${seconds}s left`;
+    }
+
+    timerText.textContent = display;
+  }, 1000);
+})();
+</script>
+{% endblock %}

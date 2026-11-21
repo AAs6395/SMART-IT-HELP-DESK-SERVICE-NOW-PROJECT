@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block page_title %}Administrator Dashboard{% endblock %}
+{% block page_subtitle %}Overview of all support activity in the organisation{% endblock %}
+
+{% block content %}
+<!-- Statistic cards -->
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-icon icon-navy"><i class="bi bi-layers-fill"></i></div>
+    <div><span class="stat-label">Total Tickets</span><span class="stat-value">{{ stats.total }}</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-blue"><i class="bi bi-inbox-fill"></i></div>
+    <div><span class="stat-label">Open</span><span class="stat-value">{{ stats.open }}</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-cyan"><i class="bi bi-person-check-fill"></i></div>
+    <div><span class="stat-label">Assigned</span><span class="stat-value">{{ stats.assigned }}</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-amber"><i class="bi bi-hourglass-split"></i></div>
+    <div><span class="stat-label">In Progress</span><span class="stat-value">{{ stats.in_progress }}</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-green"><i class="bi bi-check-circle-fill"></i></div>
+    <div><span class="stat-label">Resolved</span><span class="stat-value">{{ stats.resolved }}</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-grey"><i class="bi bi-archive-fill"></i></div>
+    <div><span class="stat-label">Closed</span><span class="stat-value">{{ stats.closed }}</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-purple"><i class="bi bi-people-fill"></i></div>
+    <div><span class="stat-label">Total Users</span><span class="stat-value">{{ stats.users }}</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon icon-teal"><i class="bi bi-headset"></i></div>
+    <div><span class="stat-label">Support Staff</span><span class="stat-value">{{ stats.support_staff }}</span></div>
+  </div>
+</div>
+
+{% if sla_breached_count and sla_breached_count > 0 %}
+<div class="alert alert-danger d-flex align-items-center justify-content-between p-3 mt-3 shadow-sm border-danger-subtle rounded-3">
+  <div class="d-flex align-items-center gap-3">
+    <div class="pulse-icon"><i class="bi bi-fire fs-3 text-danger"></i></div>
+    <div>
+      <strong class="d-block text-danger-emphasis">SLA Attention Required</strong>
+      <span class="small text-danger-emphasis"><strong>{{ sla_breached_count }}</strong> active ticket(s) have exceeded their SLA resolution deadline and require immediate escalation!</span>
+    </div>
+  </div>
+  <a href="{{ url_for('tickets.list_tickets') }}" class="btn btn-sm btn-danger px-3">
+    <i class="bi bi-arrow-right"></i> Review Tickets
+  </a>
+</div>
+{% endif %}
+
+<!-- Charts -->
+<div class="row g-3 mt-1">
+  <div class="col-lg-4">
+    <div class="card-panel h-100">
+      <div class="panel-head"><h5>Tickets by Status</h5></div>
+      <canvas id="statusChart" height="230"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-panel h-100">
+      <div class="panel-head"><h5>Tickets by Priority</h5></div>
+      <canvas id="priorityChart" height="230"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-panel h-100">
+      <div class="panel-head"><h5>Tickets by Category</h5></div>
+      <canvas id="categoryChart" height="230"></canvas>
+    </div>
+  </div>
+  <div class="col-12">
+    <div class="card-panel">
+      <div class="panel-head">
+        <h5>Monthly Ticket Creation (last 6 months)</h5>
+        <span class="text-muted small">{{ stats.unresolved }} ticket(s) currently unresolved</span>
+      </div>
+      <canvas id="monthlyChart" height="110"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Recent tickets -->
+<div class="card-panel mt-3">
+  <div class="panel-head">
+    <h5>Recent Tickets</h5>
+    <a href="{{ url_for('tickets.list_tickets') }}" class="btn btn-sm btn-outline-primary">View all tickets</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Ticket ID</th><th>Title</th><th>User</th><th>Category</th>
+          <th>Priority</th><th>Assigned To</th><th>Status</th><th>Created</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in recent_tickets %}
+        <tr>
+          <td><span class="ticket-id">{{ t.ticket_number }}</span></td>
+          <td class="fw-semibold">{{ t.title|truncate(38) }}</td>
+          <td>{{ t.creator.name }}</td>
+          <td>{{ t.category.name }}</td>
+          <td><span class="prio {{ t.priority_class }}">{{ t.priority }}</span></td>
+          <td>{{ t.assignee.name if t.assignee else '—' }}</td>
+          <td><span class="badge {{ t.status_class }}">{{ t.status }}</span></td>
+          <td class="text-muted small">{{ t.created_at.strftime('%d %b %Y') }}</td>
+          <td><a href="{{ url_for('tickets.detail', ticket_id=t.id) }}" class="btn btn-sm btn-outline-secondary">Open</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="text-center text-muted py-4">No tickets have been submitted yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const chartData = {{ chart_data|tojson }};
+  const navy = '#0b2545', blue = '#1d6fd0', cyan = '#38bdf8', amber = '#f59e0b',
+        green = '#16a34a', grey = '#94a3b8', red = '#dc2626';
+
+  if (window.Chart) {
+    Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+    Chart.defaults.color = '#5b6b82';
+
+    new Chart(document.getElementById('statusChart'), {
+      type: 'doughnut',
+      data: {
+        labels: chartData.status_labels,
+        datasets: [{
+          data: chartData.status_values,
+          backgroundColor: [navy, cyan, amber, green, grey],
+          borderWidth: 0
+        }]
+      },
+      options: { cutout: '62%', plugins: { legend: { position: 'bottom' } } }
+    });
+
+    new Chart(document.getElementById('priorityChart'), {
+      type: 'bar',
+      data: {
+        labels: chartData.priority_labels,
+        datasets: [{
+          label: 'Tickets',
+          data: chartData.priority_values,
+          backgroundColor: [green, blue, amber, red],
+          borderRadius: 8,
+          maxBarThickness: 46
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+
+    new Chart(document.getElementById('categoryChart'), {
+      type: 'pie',
+      data: {
+        labels: chartData.category_labels,
+        datasets: [{
+          data: chartData.category_values,
+          backgroundColor: [navy, blue, cyan, amber, green, '#8b5cf6', grey],
+          borderWidth: 0
+        }]
+      },
+      options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } } }
+    });
+
+    new Chart(document.getElementById('monthlyChart'), {
+      type: 'line',
+      data: {
+        labels: chartData.monthly_labels,
+        datasets: [{
+          label: 'Tickets created',
+          data: chartData.monthly_values,
+          borderColor: blue,
+          backgroundColor: 'rgba(29,111,208,.12)',
+          fill: true,
+          tension: .35,
+          pointRadius: 4
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+  }
+</script>
+{% endblock %}
